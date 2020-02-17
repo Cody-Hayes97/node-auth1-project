@@ -35,6 +35,7 @@ router.post("/login", (req, res) => {
     .first()
     .then(user => {
       if (user && bcrypt.compareSync(password, user.password)) {
+        req.session.loggedin = true;
         res.status(200).json({ message: `Welcome ${user.username}!`, user });
       } else {
         res.status(401).json({ message: "You Shall Not Pass1" });
@@ -45,21 +46,26 @@ router.post("/login", (req, res) => {
     });
 });
 
-function auth(req, res, next) {
-  const { username, password } = req.headers;
-
-  Users.findBy({ username })
-    .first()
-    .then(user => {
-      if (user && bcrypt.compareSync(password, user.password)) {
-        next();
+router.get("/logout", (req, res) => {
+  if (req.session) {
+    req.session.destroy(err => {
+      if (err) {
+        res.send("session not destroyed");
       } else {
-        res.status(401).json({ message: "You Shall Not Pass!" });
+        res.send("logged out see you soon!");
       }
-    })
-    .catch(err => {
-      res.status(500).json({ message: "unexpected error", err });
     });
+  } else {
+    res.end();
+  }
+});
+
+function auth(req, res, next) {
+  if (req.session.loggedin && req.session.loggedin === true) {
+    next();
+  } else {
+    res.status(400).json({ message: "you shall not pass" });
+  }
 }
 
 module.exports = router;
